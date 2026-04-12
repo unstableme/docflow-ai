@@ -1,8 +1,10 @@
 import fitz
 import docx
+from pathlib import Path
+from app.db.tables import Document
 class ParsingService:
     @staticmethod
-    def parse_pdf(file_path: str, db_document: Document):
+    def parse_pdf(file_path: str)-> list[str]:
         """
         Extracts structured data from born-digital pdfs.
         """
@@ -12,8 +14,8 @@ class ParsingService:
             text = page.get_text()
             pages.append(text.strip())
         return pages
-
-    def parse_word(file_path: str, db_document: Document):
+    @staticmethod
+    def parse_word(file_path: str)-> list[str]:
         """
         Extracts structured data from born-digital word documents(.doc and/or .docx).
         """

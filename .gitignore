@@ -1,5 +1,14 @@
+ocr_engine.py
+preprocessing.py
+translator.py
+
 venv
 venv\
 
 .env
 .env\
+
+__pycache__/
+uploads/*
+backend/uploads/*
+backend/__pycache__/*

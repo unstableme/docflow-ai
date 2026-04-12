@@ -9,6 +9,7 @@ from app.core.config import settings
 
 from app.services.ocr_service import OCRService
 from app.services.parsing_service import ParsingService
+from app.services.extraction_service import ExtractionService
 
 class IngestionService:
     @staticmethod
@@ -58,21 +59,54 @@ class IngestionService:
         return db_document
 
     @staticmethod
-    def get_processing_strategy(file: UploadFile):
+    async def process_document(doc_id: str, db: Session = None):
         """
-        Determines if the file should be parsed (digital) or OCR'd (scanned).
+        Background task to process the document (OCR or Parsing) and update DB.
         """
+        # If no DB session provided (standard for background tasks), create one
+        if db is None:
+            from app.db.connection import SessionLocal
+            db = SessionLocal()
+            close_session = True
+        else:
+            close_session = False
+
         try:
-            file_extension = Path(file).suffic.lower()
+            doc = db.query(Document).filter(Document.id == doc_id).first()
+            if not doc:
+                return 
+
+            file_extension = Path(doc.stored_path).suffix.lower()
+            text_pages = []
+
             if file_extension in settings.SUPPORTED_WORD_EXTENSIONS:
-                text = ParsingService.parse_word(file)
+                text_pages = ParsingService.parse_word(doc.stored_path)
             elif file_extension in settings.SUPPORTED_IMAGE_EXTENSIONS:
-                text = OCRService.process_image(file) 
+                from PIL import Image
+                img = Image.open(doc.stored_path)
+                text_pages = [OCRService.process_image(img)]
             elif file_extension in settings.SUPPORTED_PDF_EXTENSIONS:
-                text = ParsingService.parse_pdf(file)
-                if not text:
-                    text = OCRService.process_pdf_with_ocr(file)
-            return text
+                text_pages = ParsingService.parse_pdf(doc.stored_path)
+                # Fallback to OCR if PDF has no text layer
+                if not any(text_pages):
+                    text_pages = await OCRService.process_pdf_with_ocr(doc.stored_path)
+            
+            # Save extracted text
+            full_text = "\n\n".join(text_pages)
+            doc.extracted_text = full_text
+            
+            # 2. Agentic Extraction (The 'Agent' Node)
+            metadata = await ExtractionService.extract_expense_from_text(full_text)
+            doc.extracted_metadata = metadata.model_dump()
+
+            doc.status = "Completed"
+            db.commit()
+              
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Couldn't proceed. :{str(e)}")
-        
+            if db:
+                doc.status = "Failed"
+                db.commit()
+            print(f"Error processing document {doc_id}: {str(e)}")
+        finally:
+            if close_session:
+                db.close()

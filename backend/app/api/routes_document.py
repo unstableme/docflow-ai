@@ -29,8 +29,8 @@ async def upload_document(
     doc = await IngestionService.handle_upload(file=file, db=db)
 
     # 3. Trigger Background Processing (OCR/Parsing)
-    # We will implement these service calls next!
-    # background_tasks.add_task(OCRService.process, doc.id)
+    background_tasks.add_task(IngestionService.process_document, doc.id)
+
 
     return DocumentUploadResponse(
         id=doc.id,
@@ -39,10 +39,9 @@ async def upload_document(
     )
 
 @router.get("/{documents_id}")
-def get_document(documents_id: int, db: Session = Depends(get_db)):
+def get_document(documents_id: str, db: Session = Depends(get_db)):
     from app.db.tables import Document
     doc = db.query(Document).filter(Document.id == documents_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
-    return {"message": f"Document {documents_id} retrieved successfully"}

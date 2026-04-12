@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 
 from app.db.connection import Base
@@ -13,3 +13,5 @@ class Document(Base):
     stored_path = Column(String, nullable=False)
     status = Column(String, default="pending")
     upload_time = Column(DateTime, default=func.now())
+    extracted_text = Column(String, nullable=True)
+    extracted_metadata = Column(JSONB, nullable=True)

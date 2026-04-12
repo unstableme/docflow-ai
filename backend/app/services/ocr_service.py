@@ -1,8 +1,6 @@
-import os
-from pathlib import Path
-import cv2
 import pytesseract as pt
-from PIL import Image 
+from fastapi import HTTPException
+from app.core.config import settings
 
 
 def pdf_to_images(pdf_path: str):
@@ -23,7 +21,7 @@ def pdf_to_images(pdf_path: str):
 
 class OCRService:
     @staticmethod
-    def process_image(image: np.ndarray)->str:
+    def process_image(image)->str: #either numpy ndarray img or pil
         try:
             text = pt.image_to_string(image)
             return text.strip()
