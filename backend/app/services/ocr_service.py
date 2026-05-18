@@ -1,6 +1,7 @@
 import pytesseract as pt
 from fastapi import HTTPException
 from app.core.config import settings
+from app.services.image_preprocessing_service import ImagePreprocessingService
 
 
 def pdf_to_images(pdf_path: str):
@@ -19,11 +20,14 @@ def pdf_to_images(pdf_path: str):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Could not convert PDF to images: {str(e)}")
 
+
 class OCRService:
     @staticmethod
     def process_image(image)->str: #either numpy ndarray img or pil
         try:
-            text = pt.image_to_string(image)
+            # Preprocess the image to improve OCR accuracy
+            preprocessed_image = ImagePreprocessingService.preprocess_image(image)
+            text = pt.image_to_string(preprocessed_image)
             return text.strip()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Could not process image: {str(e)}")

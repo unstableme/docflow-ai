@@ -29,4 +29,8 @@ class Settings:
     # Folder paths (for OCR and storage)
     UPLOAD_DIR: str = "uploads"
 
+    # AI Model Settings
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
+    EXTRACTION_MODEL: str = os.getenv("EXTRACTION_MODEL", "google/gemini-2.0-flash-001")
+
 settings = Settings()

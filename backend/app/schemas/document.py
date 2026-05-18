@@ -24,3 +24,31 @@ class DocumentUploadResponse(BaseModel):
     message: str = "Document Uploaded Successfully"
     metadata: Optional[ExpenseMetadata] = None
 
+class DocumentRead(BaseModel):
+    id: Any
+    filename: str = Field(..., alias="original_filename")
+    file_type: str = "application/pdf" # Default for now
+    document_type: str = "invoice"
+    status: str
+    uploaded_at: Any = Field(..., alias="upload_time")
+    source_type: str = "upload"
+    metadata: Optional[ExpenseMetadata] = Field(None, alias="extracted_metadata")
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
+class DocumentUpdate(BaseModel):
+    status: Optional[str] = None
+    metadata: Optional[ExpenseMetadata] = Field(None, alias="extracted_metadata")
+    
+    class Config:
+        populate_by_name = True
+
+class DashboardStats(BaseModel):
+    totalDocuments: int
+    processedDocuments: int
+    flaggedDocuments: int
+    totalBilledAmount: float
+    currency: str = "USD"
+

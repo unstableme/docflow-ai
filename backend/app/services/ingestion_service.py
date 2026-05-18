@@ -11,6 +11,8 @@ from app.services.ocr_service import OCRService
 from app.services.parsing_service import ParsingService
 from app.services.extraction_service import ExtractionService
 
+from app.services.rag.chunking import chunk_text
+
 class IngestionService:
     @staticmethod
     async def handle_upload(file: UploadFile, db: Session):
@@ -21,17 +23,15 @@ class IngestionService:
         3. Creates database record
         4. Returns the database object
         """
-        # 1. Generate unique filename to prevent overwriting
+        # Generating unique filename to prevent overwriting
         original_filename = file.filename or "unknown"
         file_extension = Path(original_filename).suffix.lower()
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         
         file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-        
-        # Ensure upload directory exists
+
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
         
-        # 2. Save file to disk
         try:
             content = await file.read()
             with open(file_path, "wb") as f:
@@ -39,11 +39,11 @@ class IngestionService:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Could not save file: {str(e)}")
 
-        # 3. Create initial database record
+        #  Creating initial database record
         db_document = Document(
             original_filename=original_filename,
             stored_path=file_path,
-            status="Processing"
+            status="processing"
         )
         
         try:
@@ -51,7 +51,7 @@ class IngestionService:
             db.commit()
             db.refresh(db_document)
         except Exception as e:
-            # Cleanup file if DB save fails
+            # Cleaningup file if DB save fails
             if os.path.exists(file_path):
                 os.remove(file_path)
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
@@ -90,23 +90,29 @@ class IngestionService:
                 # Fallback to OCR if PDF has no text layer
                 if not any(text_pages):
                     text_pages = await OCRService.process_pdf_with_ocr(doc.stored_path)
-            
-            # Save extracted text
+
             full_text = "\n\n".join(text_pages)
             doc.extracted_text = full_text
             
-            # 2. Agentic Extraction (The 'Agent' Node)
+            # Agentic Extraction
             metadata = await ExtractionService.extract_expense_from_text(full_text)
-            doc.extracted_metadata = metadata.model_dump()
+            doc.extracted_metadata = metadata.model_dump(mode='json')
 
-            doc.status = "Completed"
+            doc.status = "processed"
             db.commit()
               
         except Exception as e:
+            logger.error(f"Error processing document {doc_id}: {str(e)}")
             if db:
-                doc.status = "Failed"
-                db.commit()
-            print(f"Error processing document {doc_id}: {str(e)}")
+                try:
+                    db.rollback()
+                    # Re-fetch document if it was detached or in a weird state
+                    doc = db.query(Document).filter(Document.id == doc_id).first()
+                    if doc:
+                        doc.status = "error"
+                        db.commit()
+                except Exception as rollback_e:
+                    logger.error(f"Failed to rollback or update status: {rollback_e}")
         finally:
             if close_session:
                 db.close()

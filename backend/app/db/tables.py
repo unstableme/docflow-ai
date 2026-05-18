@@ -15,3 +15,4 @@ class Document(Base):
     upload_time = Column(DateTime, default=func.now())
     extracted_text = Column(String, nullable=True)
     extracted_metadata = Column(JSONB, nullable=True)
+    source_type = Column(String, default="upload", nullable=False)

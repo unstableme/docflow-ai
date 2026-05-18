@@ -1,75 +1,118 @@
 import json
 import logging
-from typing import Optional
+from openai import OpenAI
 from app.schemas.document import ExpenseMetadata
-# We will use google-generativeai, but I'll write it to be easily swappable
-# If you don't have it: pip install google-generativeai
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class ExtractionService:
     @staticmethod
-    async def extract_expense_from_text(text: str, api_key: Optional[str] = None) -> ExpenseMetadata:
+    async def extract_expense_from_text(text: str) -> ExpenseMetadata:
         """
-        Agentic Extraction Node: Takes raw text and turns it into structured ExpenseMetadata.
-        This follows a 'Chain of Thought' approach internally.
+        Agentic Extraction Node: Uses OpenRouter (OpenAI SDK) to turn raw text 
+        into structured ExpenseMetadata with a fallback loop.
         """
         if not text or len(text.strip()) < 5:
             logger.warning("Extraction skipped: Text is too short or empty.")
             return ExpenseMetadata(confidence_score=0.0)
 
-        # 1. In a real scenario, we'd initialize the Gemini/LLM client here
-        # For now, let's create the prompt and a placeholder for the call
-        
+        logger.info(f"--- START EXTRACTED TEXT ---\n{text}\n--- END EXTRACTED TEXT ---")
+
+        # 1. Model priority (Primary -> Backups)
+        models_to_try = [
+            settings.EXTRACTION_MODEL,                   
+            "minimax/minimax-m2.5:free",
+            "qwen/qwen3-next-80b-a3b-instruct:free",
+            "openai/gpt-oss-120b:free"
+        ]
+
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=settings.OPENROUTER_API_KEY
+        )
+
         system_instruction = """
         You are an expert Accountant and Data Extraction Agent. 
-        Your task is to analyze raw OCR text from receipts/invoices and extract structured data.
+        Analyze the raw OCR or parsed text from a receipt/invoice and extract structured data into the specified JSON format.
         
-        RULES:
-        1. Only return valid JSON matching the provided schema.
-        2. If a value is missing, return null or an empty list.
-        3. TRANSACTION_DATE: Convert to YYYY-MM-DD.
-        4. CONFIDENCE_SCORE: Rate how readable the text was from 0.0 to 1.0.
-        5. CATEGORY: Categorize into: Food, Travel, Office, Utilities, or Other.
-        """
+        KEY IDENTIFICATION RULES:
+        1. VENDOR_NAME: This is the entity PROVIDING the service or product (the seller). They are usually at the top, often in a larger font or identified by their logo.
+        2. RECIPIENT: The person or company being billed. Do NOT confuse them with the Vendor.
+        3. TRANSACTION_DATE: The date the invoice was issued. Convert to YYYY-MM-DD.
+        4. CATEGORY: Infer the most likely category from [Food, Travel, Office, Utilities, Other].
+        5. LINE_ITEMS: Extract each item with its description, quantity, unit_price, and total_price.
         
-        prompt = f"Extract expense data from the following OCR text:\n\n{text}"
-        
-        # TODO: Implement actual LLM call here. 
-        # Example using Gemini:
-        # model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_instruction)
-        # response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-        
-        # MOCK RESPONSE for demonstration of the flow:
-        mock_data = {
-            "vendor_name": "Sample Vendor (LLM Not Configured)",
-            "total_amount": 0.0,
-            "currency": "USD",
-            "confidence_score": 0.1,
-            "line_items": []
+        JSON SCHEMA:
+        {
+            "vendor_name": "string or null",
+            "transaction_date": "YYYY-MM-DD or null",
+            "total_amount": "number or null",
+            "currency": "string (3-letter code, default USD)",
+            "tax_amount": "number or null",
+            "category": "string or null",
+            "line_items": [
+                {
+                    "description": "string",
+                    "quantity": "number",
+                    "unit_price": "number or null",
+                    "total_price": "number"
+                }
+            ],
+            "confidence_score": "number between 0 and 1"
         }
-        
-        try:
-            # Here we would normally parse response.text
-            return ExpenseMetadata(**mock_data)
-        except Exception as e:
-            logger.error(f"Error parsing LLM response: {e}")
-            return ExpenseMetadata(confidence_score=0.0)
+
+        RULES:
+        1. Return ONLY valid JSON matching the schema above.
+        2. Use null for missing fields.
+        3. Ensure numeric values are numbers, not strings.
+        4. SPELLING CORRECTION: If you are highly confident (99-100%) that a word in the OCR text is misspelled (due to typos or OCR errors), automatically correct it to the intended word in the extracted JSON.
+        """
+
+        for model_name in models_to_try:
+            try:
+                logger.info(f"Attempting extraction with model: {model_name}")
+                
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": f"Extract data from this text:\n\n{text}"}
+                    ],
+                    timeout=30.0, # Don't wait forever
+                    response_format={"type": "json_object"} if "gemini" in model_name.lower() or "qwen" in model_name.lower() else None
+                )
+
+                raw_json = response.choices[0].message.content
+                data = json.loads(raw_json)
+                
+                extracted_data = ExpenseMetadata(**data)
+                
+                # If we got here, it's a success! Break the loop.
+                logger.info(f"Successful extraction using {model_name}")
+                return extracted_data
+
+            except Exception as e:
+                logger.error(f"Model {model_name} failed: {e}. Trying next...")
+                continue # Move to the next model in the list
+
+        logger.error("All extraction models failed.")
+        return ExpenseMetadata(confidence_score=0.0)
 
     @staticmethod
     def validate_extraction(data: ExpenseMetadata) -> bool:
         """
         Validation Node: Checks if the data is sane.
-        This is where the LangGraph 'Conditional Edge' would live.
         """
         if not data.vendor_name or data.total_amount is None:
             return False
         
         # Check if line items sum up to total (if they exist)
-        if data.line_items:
+        if hasattr(data, 'line_items') and data.line_items:
             items_sum = sum(item.total_price for item in data.line_items)
-            if abs(items_sum - data.total_amount) > 0.01:
-                logger.info("Validation Failed: Line items do not match total.")
+            # Allow for a small rounding difference (0.01)
+            if abs(items_sum - data.total_amount) > 0.05:
+                logger.info(f"Validation Warn: Sum ({items_sum}) != Total ({data.total_amount})")
                 return False
                 
         return True
