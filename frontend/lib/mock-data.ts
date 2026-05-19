@@ -11,6 +11,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "processed",
     uploaded_at: "2026-03-15T10:22:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Amazon Web Services",
       transaction_date: "2026-03-15",
@@ -33,6 +34,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "receipt",
     status: "processed",
     uploaded_at: "2026-03-18T14:05:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Staples Inc.",
       transaction_date: "2026-03-18",
@@ -56,6 +58,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "statement",
     status: "flagged",
     uploaded_at: "2026-03-20T09:00:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Microsoft Azure",
       transaction_date: "2026-03-20",
@@ -78,6 +81,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "processed",
     uploaded_at: "2026-03-22T16:40:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "FedEx Corporation",
       transaction_date: "2026-03-22",
@@ -99,6 +103,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "processed",
     uploaded_at: "2026-03-25T11:15:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Slack Technologies",
       transaction_date: "2026-03-25",
@@ -119,6 +124,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "receipt",
     status: "processed",
     uploaded_at: "2026-04-01T12:30:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Uber Eats",
       transaction_date: "2026-04-01",
@@ -140,6 +146,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "processing",
     uploaded_at: "2026-04-02T13:00:00Z",
+    source_type: "upload",
     metadata: null,
   },
   {
@@ -149,6 +156,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "error",
     uploaded_at: "2026-04-05T17:45:00Z",
+    source_type: "upload",
     metadata: null,
   },
   {
@@ -158,6 +166,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "invoice",
     status: "processed",
     uploaded_at: "2026-04-06T10:00:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Adobe Systems",
       transaction_date: "2026-04-06",
@@ -178,6 +187,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     document_type: "receipt",
     status: "flagged",
     uploaded_at: "2026-04-08T09:15:00Z",
+    source_type: "upload",
     metadata: {
       vendor_name: "Hilton Garden Inn",
       transaction_date: "2026-04-08",
