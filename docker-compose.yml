@@ -14,6 +14,42 @@ services:
       - "25432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - finai_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finai_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - db
+    networks:
+      - finai_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: finai_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - finai_network
 
 volumes:
   postgres_data:
+
+networks:
+  finai_network:
+    driver: bridge
