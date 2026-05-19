@@ -1,0 +1,222 @@
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+// Replace calls to these with real API calls from lib/api.ts when backend is ready.
+
+import type { Document, DashboardStats, AIMessage } from "@/types";
+
+export const MOCK_DOCUMENTS: Document[] = [
+  {
+    id: "doc-001",
+    filename: "amazon_invoice_march.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "processed",
+    uploaded_at: "2026-03-15T10:22:00Z",
+    metadata: {
+      vendor_name: "Amazon Web Services",
+      transaction_date: "2026-03-15",
+      total_amount: 4320.5,
+      currency: "USD",
+      tax_amount: 432.05,
+      category: "Cloud Infrastructure",
+      confidence_score: 0.97,
+      line_items: [
+        { description: "EC2 Compute - t3.large", quantity: 2, unit_price: 1050.0, total_price: 2100.0 },
+        { description: "S3 Storage - Standard", quantity: 1, unit_price: 980.5, total_price: 980.5 },
+        { description: "RDS Database Instance", quantity: 1, unit_price: 1240.0, total_price: 1240.0 },
+      ],
+    },
+  },
+  {
+    id: "doc-002",
+    filename: "office_supplies_receipt.jpg",
+    file_type: "image/jpeg",
+    document_type: "receipt",
+    status: "processed",
+    uploaded_at: "2026-03-18T14:05:00Z",
+    metadata: {
+      vendor_name: "Staples Inc.",
+      transaction_date: "2026-03-18",
+      total_amount: 187.4,
+      currency: "USD",
+      tax_amount: 14.2,
+      category: "Office Supplies",
+      confidence_score: 0.91,
+      line_items: [
+        { description: "A4 Paper (5 reams)", quantity: 5, unit_price: 12.5, total_price: 62.5 },
+        { description: "Ink Cartridge Set (CMYK)", quantity: 2, unit_price: 45.5, total_price: 91.0 },
+        { description: "Sticky Notes (10pk)", quantity: 3, unit_price: 4.0, total_price: 12.0 },
+        { description: "File Folders (100ct)", quantity: 1, unit_price: 21.9, total_price: 21.9 },
+      ],
+    },
+  },
+  {
+    id: "doc-003",
+    filename: "azure_monthly_statement.pdf",
+    file_type: "application/pdf",
+    document_type: "statement",
+    status: "flagged",
+    uploaded_at: "2026-03-20T09:00:00Z",
+    metadata: {
+      vendor_name: "Microsoft Azure",
+      transaction_date: "2026-03-20",
+      total_amount: 11800.0,
+      currency: "USD",
+      tax_amount: 0.0,
+      category: "Cloud Infrastructure",
+      confidence_score: 0.74,
+      line_items: [
+        { description: "Azure Compute (D4s v3)", quantity: 8, unit_price: 775.0, total_price: 6200.0 },
+        { description: "Azure Blob Storage (P10)", quantity: 40, unit_price: 40.0, total_price: 1600.0 },
+        { description: "Azure SQL Database (BC)", quantity: 1, unit_price: 4000.0, total_price: 4000.0 },
+      ],
+    },
+  },
+  {
+    id: "doc-004",
+    filename: "fedex_shipping_invoice.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "processed",
+    uploaded_at: "2026-03-22T16:40:00Z",
+    metadata: {
+      vendor_name: "FedEx Corporation",
+      transaction_date: "2026-03-22",
+      total_amount: 342.9,
+      currency: "USD",
+      tax_amount: 27.43,
+      category: "Logistics",
+      confidence_score: 0.95,
+      line_items: [
+        { description: "Priority Overnight Shipment", quantity: 3, unit_price: 94.14, total_price: 282.43 },
+        { description: "Insurance & Handling", quantity: 1, unit_price: 60.47, total_price: 60.47 },
+      ],
+    },
+  },
+  {
+    id: "doc-005",
+    filename: "slack_subscription_q1.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "processed",
+    uploaded_at: "2026-03-25T11:15:00Z",
+    metadata: {
+      vendor_name: "Slack Technologies",
+      transaction_date: "2026-03-25",
+      total_amount: 875.0,
+      currency: "USD",
+      tax_amount: 70.0,
+      category: "Software & SaaS",
+      confidence_score: 0.99,
+      line_items: [
+        { description: "Slack Pro Plan - 50 Seats", quantity: 50, unit_price: 17.5, total_price: 875.0 },
+      ],
+    },
+  },
+  {
+    id: "doc-006",
+    filename: "uber_eats_receipt.jpg",
+    file_type: "image/jpeg",
+    document_type: "receipt",
+    status: "processed",
+    uploaded_at: "2026-04-01T12:30:00Z",
+    metadata: {
+      vendor_name: "Uber Eats",
+      transaction_date: "2026-04-01",
+      total_amount: 42.5,
+      currency: "USD",
+      tax_amount: 3.5,
+      category: "Meals & Entertainment",
+      confidence_score: 0.94,
+      line_items: [
+        { description: "Poke Bowl", quantity: 2, unit_price: 18.0, total_price: 36.0 },
+        { description: "Delivery Fee & Service", quantity: 1, unit_price: 6.5, total_price: 6.5 },
+      ],
+    },
+  },
+  {
+    id: "doc-007",
+    filename: "google_workspace_invoice.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "processing",
+    uploaded_at: "2026-04-02T13:00:00Z",
+    metadata: null,
+  },
+  {
+    id: "doc-008",
+    filename: "ups_shipping_error.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "error",
+    uploaded_at: "2026-04-05T17:45:00Z",
+    metadata: null,
+  },
+  {
+    id: "doc-009",
+    filename: "adobe_creative_cloud.pdf",
+    file_type: "application/pdf",
+    document_type: "invoice",
+    status: "processed",
+    uploaded_at: "2026-04-06T10:00:00Z",
+    metadata: {
+      vendor_name: "Adobe Systems",
+      transaction_date: "2026-04-06",
+      total_amount: 599.88,
+      currency: "USD",
+      tax_amount: 47.99,
+      category: "Software & SaaS",
+      confidence_score: 0.98,
+      line_items: [
+        { description: "Creative Cloud All Apps (Annual)", quantity: 1, unit_price: 599.88, total_price: 599.88 },
+      ],
+    },
+  },
+  {
+    id: "doc-010",
+    filename: "hilton_hotel_stay.pdf",
+    file_type: "application/pdf",
+    document_type: "receipt",
+    status: "flagged",
+    uploaded_at: "2026-04-08T09:15:00Z",
+    metadata: {
+      vendor_name: "Hilton Garden Inn",
+      transaction_date: "2026-04-08",
+      total_amount: 2340.0,
+      currency: "USD",
+      tax_amount: 187.2,
+      category: "Travel",
+      confidence_score: 0.62,
+      line_items: [
+        { description: "King Room - 4 Nights", quantity: 4, unit_price: 450.0, total_price: 1800.0 },
+        { description: "Business Breakfast", quantity: 4, unit_price: 35.0, total_price: 140.0 },
+        { description: "Parking & Incidentals", quantity: 1, unit_price: 400.0, total_price: 400.0 },
+      ],
+    },
+  },
+];
+
+export const MOCK_STATS: DashboardStats = {
+  totalDocuments: 10,
+  processedDocuments: 6,
+  flaggedDocuments: 2,
+  totalBilledAmount: 21264.68,
+  currency: "USD",
+};
+
+export const MOCK_AI_MESSAGES: AIMessage[] = [
+  {
+    id: "msg-001",
+    role: "assistant",
+    content: "Hello! I'm your DocFlow AI assistant. I can help you search documents, find invoices by vendor, calculate totals, and surface spending insights. What would you like to know?",
+    timestamp: new Date().toISOString(),
+  },
+];
+
+export const AI_SUGGESTION_CHIPS = [
+  "Show highest invoice this month",
+  "Total billed amount in March",
+  "List flagged documents",
+  "Which vendor has the most invoices?",
+  "Show all cloud infrastructure expenses",
+  "Documents from Amazon this quarter",
+];

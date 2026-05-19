@@ -1,9 +1,12 @@
-name: Build and Push Docker Images
+name: Build and Push Frontend Docker Image
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/docker-build-push-frontend.yml'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
@@ -21,14 +24,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Backend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: unstableme02/finai-backend:latest
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
