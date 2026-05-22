@@ -33,4 +33,10 @@ class Settings:
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
     EXTRACTION_MODEL: str = os.getenv("EXTRACTION_MODEL", "google/gemini-2.0-flash-001")
 
+    # Groq Config
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
+    RAG_MODEL_1: str = os.getenv("RAG_MODEL_1", "llama-3.3-70b-versatile")
+    RAG_MODEL_2: str = os.getenv("RAG_MODEL_2", "meta-llama/llama-4-scout-17b-16e-instruct")
+    RAG_MODEL_3: str = os.getenv("RAG_MODEL_3", "openai/gpt-oss-20b")
+
 settings = Settings()

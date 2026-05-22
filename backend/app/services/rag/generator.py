@@ -40,12 +40,26 @@ class AIAssistantService:
                     
         context_text = "\n\n---\n\n".join(context_parts)
         
+        if not settings.GROQ_API_KEY:
+            logger.error("GROQ_API_KEY is not set in environment settings.")
+            return AIQueryResponse(
+                answer="Sorry, the AI assistant is currently unavailable: GROQ_API_KEY is missing from configuration.",
+                sources=[],
+                timestamp=datetime.utcnow().isoformat()
+            )
+
         client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=settings.OPENROUTER_API_KEY
+            base_url="https://api.groq.com/openai/v1",
+            api_key=settings.GROQ_API_KEY
         )
         
-        model_name = "minimax/minimax-m2.5:free"
+        models_to_try = [
+            settings.RAG_MODEL_1,
+            settings.RAG_MODEL_2,
+            settings.RAG_MODEL_3
+        ]
+        # Filter out empty/None models
+        models_to_try = [m for m in models_to_try if m]
         
         system_instruction = f"""
         You are an intelligent Finance Assistant. You have access to the following extracted financial documents.
@@ -58,30 +72,40 @@ class AIAssistantService:
         {context_text}
         """
 
-        try:
-            logger.info(f"Querying AI Assistant with question: {question}")
-            
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": question}
-                ],
-                timeout=45.0
-            )
+        answer = None
+        last_error = None
 
-            answer = response.choices[0].message.content
-            
+        for model_name in models_to_try:
+            try:
+                logger.info(f"Querying AI Assistant with model {model_name} for question: {question}")
+                
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": question}
+                    ],
+                    timeout=45.0
+                )
+
+                answer = response.choices[0].message.content
+                logger.info(f"Successfully got response from model {model_name}")
+                break  # Success, exit fallback loop
+
+            except Exception as e:
+                logger.warning(f"AI Assistant Query failed with model {model_name}: {e}. Trying fallback if available...")
+                last_error = e
+
+        if answer is not None:
             return AIQueryResponse(
                 answer=answer,
                 sources=list(source_ids),
                 timestamp=datetime.utcnow().isoformat()
             )
-
-        except Exception as e:
-            logger.error(f"AI Assistant Query failed: {e}")
+        else:
+            logger.error(f"All AI Assistant models failed. Last error: {last_error}")
             return AIQueryResponse(
-                answer=f"Sorry, I encountered an error while processing your request: {str(e)}",
+                answer=f"Sorry, I encountered an error while processing your request: {str(last_error)}",
                 sources=[],
                 timestamp=datetime.utcnow().isoformat()
             )
