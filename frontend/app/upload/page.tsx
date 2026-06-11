@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Link from "next/link";
 import { CloudUpload, CheckCircle2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropZone } from "@/components/upload/DropZone";
@@ -65,13 +66,13 @@ export default function UploadPage() {
         );
         try {
           // TODO: uploadDocument() in lib/api.ts → POST /documents/
-          await uploadDocument(item.file, item.source, (pct) => {
+          const response = await uploadDocument(item.file, item.source, (pct) => {
             setFiles((prev) =>
               prev.map((f) => f.id === item.id ? { ...f, progress: pct } : f)
             );
           });
           setFiles((prev) =>
-            prev.map((f) => f.id === item.id ? { ...f, status: "success", progress: 100 } : f)
+            prev.map((f) => f.id === item.id ? { ...f, status: "success", progress: 100, response } : f)
           );
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Upload failed";
@@ -168,9 +169,17 @@ export default function UploadPage() {
           </Button>
 
           {successCount > 0 && (
-            <div className="flex items-center gap-2 text-sm text-green-400 font-medium">
-              <CheckCircle2 className="h-4 w-4" />
-              {successCount} uploaded successfully
+            <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-green-400 font-medium">
+                <CheckCircle2 className="h-4 w-4" />
+                {successCount} uploaded successfully
+              </div>
+              <Link
+                href="/documents"
+                className="rounded-lg bg-green-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-green-600"
+              >
+                View it
+              </Link>
             </div>
           )}
         </div>

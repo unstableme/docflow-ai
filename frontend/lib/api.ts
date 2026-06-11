@@ -14,29 +14,94 @@ import type {
 import { MOCK_DOCUMENTS, MOCK_STATS } from "@/lib/mock-data";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-// TODO: set NEXT_PUBLIC_API_URL=http://localhost:8000 in .env.local
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+const API_PORT = "8000";
+const CONFIGURED_API_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${BASE_URL}${path}`;
-  console.log(`[API] Fetching: ${url}`, init?.method || "GET");
-  
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+const isLoopbackHost = (host: string) =>
+  host === "localhost" || host === "127.0.0.1" || host === "::1";
+
+const withProtocol = (url: string, protocol = "http:") =>
+  /^https?:\/\//i.test(url) ? url : `${protocol}//${url}`;
+
+export function getApiBaseUrl() {
+  const fallbackUrl = `http://127.0.0.1:${API_PORT}`;
+
+  if (typeof window === "undefined") {
+    return CONFIGURED_API_URL ? withProtocol(CONFIGURED_API_URL).replace(/\/$/, "") : fallbackUrl;
   }
-  return res.json() as Promise<T>;
+
+  const frontendHost = window.location.hostname;
+  const frontendProtocol = window.location.protocol || "http:";
+
+  if (CONFIGURED_API_URL) {
+    const configuredUrl = new URL(withProtocol(CONFIGURED_API_URL, frontendProtocol));
+
+    if (isLoopbackHost(configuredUrl.hostname) && !isLoopbackHost(frontendHost)) {
+      configuredUrl.hostname = frontendHost;
+      configuredUrl.port = configuredUrl.port || API_PORT;
+      configuredUrl.protocol = frontendProtocol;
+    }
+
+    return configuredUrl.toString().replace(/\/$/, "");
+  }
+
+  if (isLoopbackHost(frontendHost)) {
+    return fallbackUrl;
+  }
+
+  return `${frontendProtocol}//${frontendHost}:${API_PORT}`;
 }
 
-// Simulated delay for mock responses (feels realistic)
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const API_TIMEOUT_MS = 15_000;
 
-// ── Documents ─────────────────────────────────────────────────────────────────
+async function fetchWithTimeout(
+  url: string,
+  init?: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const primaryBase = getApiBaseUrl();
+  const url = `${primaryBase}${path}`;
+  console.log(`[API] Fetching: ${url}`, init?.method || "GET");
+
+  try {
+    const res = await fetchWithTimeout(url, init);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<T>;
+  } catch (err) {
+    // If the primary URL isn't the loopback fallback, retry against 127.0.0.1
+    // This handles the case where the browser is on a LAN IP but the backend
+    // only listens on localhost.
+    const fallbackBase = `http://127.0.0.1:${API_PORT}`;
+    if (primaryBase !== fallbackBase && typeof window !== "undefined") {
+      const fallbackUrl = `${fallbackBase}${path}`;
+      console.warn(`[API] Primary fetch failed, retrying on fallback: ${fallbackUrl}`, err);
+      const res = await fetchWithTimeout(fallbackUrl, init);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<T>;
+    }
+    throw err;
+  }
+}
 
 /**
  * Upload a single document file.
@@ -54,7 +119,7 @@ export async function uploadDocument(
   // Note: Standard fetch doesn't support progress events. 
   // For true progress, we'd use XMLHttpRequest or axios.
   // For now, we simulate full progress on completion.
-  const res = await fetch(`${BASE_URL}/documents/`, {
+  const res = await fetch(`${getApiBaseUrl()}/documents/`, {
     method: "POST",
     body: formData,
   });
@@ -98,9 +163,10 @@ export async function updateDocument(id: string, data: { status?: DocumentStatus
 /**
  * Delete a document by ID.
  */
-export async function deleteDocument(id: string): Promise<{ message: string; id: string }> {
+export async function deleteDocument(id: string, adminPassword?: string): Promise<{ message: string; id: string }> {
   return apiFetch<{ message: string; id: string }>(`/documents/${id}`, {
     method: "DELETE",
+    headers: adminPassword ? { "X-Admin-Password": adminPassword } : undefined,
   });
 }
 

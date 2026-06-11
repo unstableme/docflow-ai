@@ -32,8 +32,11 @@ export default function DashboardPage() {
     ]).then(([s, docs]) => {
       setStats(s);
       setRecent(docs.slice(0, 5));
+    }).catch((err) => {
+      console.error("[Dashboard] Failed to load data:", err);
     }).finally(() => setLoading(false));
   }, []);
+
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-8">

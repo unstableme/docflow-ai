@@ -1,7 +1,8 @@
 from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks, Form, Header
 from sqlalchemy.orm import Session
 import os
+import mimetypes
 from pathlib import Path
 import logging
 
@@ -88,10 +89,8 @@ def get_stats(db: Session = Depends(get_db)):
     processed = db.query(Document).filter(Document.status == "approved").count()
     flagged = db.query(Document).filter(Document.status == "flagged").count()
     
-    # Calculate total billed amount from JSONB metadata
-    # This is a bit complex in SQLite/Postgres across JSONB
-    # For MVP, we'll sum it in Python or assume a simpler structure
-    all_docs = db.query(Document).filter(Document.status.in_(["processed", "approved"])).all()
+    # Calculate total billed amount only including approved records 
+    all_docs = db.query(Document).filter(Document.status == "approved").all()
     total_amount = sum([
         (d.extracted_metadata.get("total_amount") or 0) 
         for d in all_docs 
@@ -169,6 +168,7 @@ def get_document_file(documents_id: str, db: Session = Depends(get_db)):
     return FileResponse(
         path=file_path, 
         filename=doc.original_filename, 
+        media_type=mimetypes.guess_type(doc.original_filename)[0] or "application/octet-stream",
         content_disposition_type="inline"
     )
 
@@ -210,12 +210,20 @@ def create_manual_document(
 def delete_document(
     documents_id: str,
     background_tasks: BackgroundTasks,
+    x_admin_password: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """
     Deletes a document record, its associated file from disk,
     and removes its vectors from Pinecone.
     """
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if admin_password and x_admin_password != admin_password:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid admin password. Deletion not authorized."
+        )
+
     from app.db.tables import Document
     from app.services.rag.ingestion import RAGIngestionService
     

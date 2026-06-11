@@ -1,4 +1,5 @@
 import uuid
+import mimetypes
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
@@ -16,3 +17,7 @@ class Document(Base):
     extracted_text = Column(String, nullable=True)
     extracted_metadata = Column(JSONB, nullable=True)
     source_type = Column(String, default="upload", nullable=False)
+
+    @property
+    def file_type(self):
+        return mimetypes.guess_type(self.original_filename)[0] or "application/octet-stream"

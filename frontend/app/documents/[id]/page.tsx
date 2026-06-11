@@ -9,13 +9,11 @@ import {
 import { StatusBadge, TypeBadge } from "@/components/documents/DocumentBadge";
 import { RadialProgress } from "@/components/documents/RadialProgress";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { getDocument, updateDocument } from "@/lib/api";
+import { getApiBaseUrl, getDocument, updateDocument } from "@/lib/api";
 import { Separator } from "@/components/ui/separator";
 import type { Document, ExpenseMetadata, ExpenseItem } from "@/types";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-const BACK_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -153,6 +151,12 @@ export default function DocumentDetailPage() {
   };
 
   const m = isEditing ? editData : doc.metadata;
+  const originalFileUrl = `${getApiBaseUrl()}/documents/${doc.id}/file`;
+  const isImagePreview =
+    doc.file_type?.startsWith("image/") || /\.(png|jpe?g|webp|gif|bmp)$/i.test(doc.filename);
+  const previewUrl = doc.file_type === "application/pdf"
+    ? `${originalFileUrl}#toolbar=0&navpanes=0&view=FitH`
+    : originalFileUrl;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in pb-12">
@@ -435,7 +439,7 @@ export default function DocumentDetailPage() {
                   </div>
               </div>
             ) : (
-              <div className="perspective-1000 w-full aspect-[3/4]">
+              <div className="perspective-1000 w-full aspect-[3/4] overflow-hidden">
                 <div 
                 className={`relative w-full h-full transition-all duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : 'cursor-pointer group'}`}
                 onClick={() => !isFlipped && setIsFlipped(true)}
@@ -466,13 +470,22 @@ export default function DocumentDetailPage() {
                       Close Flip
                     </button>
                   </div>
-                  <div className="flex-1 w-full bg-zinc-100/50">
-                    {/* Embedded file preview using iframe */}
-                    <iframe 
-                      src={`${BACK_URL}/documents/${doc.id}/file`} 
-                      className="w-full h-full border-0"
-                      title="Document Preview"
-                    />
+                  <div className="flex-1 w-full min-h-0 bg-zinc-100/50">
+                    {isImagePreview ? (
+                      <div className="flex h-full w-full items-center justify-center overflow-hidden bg-white p-2">
+                        <img
+                          src={previewUrl}
+                          alt={doc.filename}
+                          className="block max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <iframe
+                        src={previewUrl}
+                        className="h-full w-full border-0"
+                        title="Document Preview"
+                      />
+                    )}
                   </div>
                   </div>
                 </div>

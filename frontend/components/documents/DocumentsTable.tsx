@@ -18,13 +18,18 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this document?")) {
-      try {
-        await deleteDocument(id);
-        onRefresh?.();
-      } catch (err) {
-        console.error("Failed to delete document:", err);
-      }
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+    const adminPassword = window.prompt("Enter admin password to delete this document:");
+    if (!adminPassword) return;
+
+    try {
+      await deleteDocument(id, adminPassword);
+      onRefresh?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete document";
+      window.alert(message);
+      console.error("Failed to delete document:", err);
     }
   };
 
@@ -65,7 +70,7 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+    <div className="w-full rounded-2xl border border-border bg-card overflow-hidden">
       {/* Table header */}
       <div className="hidden md:grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr_0.8fr_100px] gap-4 px-5 py-3 border-b border-border bg-muted/20">
         {["Vendor / File", "Type", "Source", "Amount", "Date", "Status", "Actions"].map((h) => (
@@ -81,7 +86,7 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
           <div
             key={doc.id}
             onClick={() => router.push(`/documents/${doc.id}`)}
-            className="w-full group flex md:grid md:grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr_0.8fr_100px] items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors duration-150"
+            className="w-full group grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-3 px-4 py-4 hover:bg-accent/30 transition-colors duration-150 md:grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr_0.8fr_100px] md:items-center md:gap-4 md:px-5"
             style={{ cursor: 'pointer' }}
           >
             {/* Vendor / file */}
@@ -98,7 +103,7 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
             </div>
 
             {/* Type */}
-            <div>
+            <div className="flex justify-end md:block">
               <TypeBadge type={doc.document_type} />
             </div>
 
@@ -110,7 +115,10 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
             </div>
 
             {/* Amount */}
-            <div>
+            <div className="min-w-0">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">
+                Amount
+              </span>
               <span className="text-sm font-semibold text-foreground">
                 {doc.metadata?.total_amount != null
                   ? formatCurrency(doc.metadata.total_amount, doc.metadata.currency)
@@ -120,7 +128,10 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
             </div>
 
             {/* Date */}
-            <div>
+            <div className="min-w-0 text-right md:text-left">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">
+                Date
+              </span>
               <span className="text-sm text-muted-foreground">
                 {doc.metadata?.transaction_date
                   ? formatDate(doc.metadata.transaction_date)
@@ -129,7 +140,7 @@ export function DocumentsTable({ documents, loading, onRefresh }: DocumentsTable
             </div>
 
             {/* Status */}
-            <div>
+            <div className="flex items-center md:block">
               <StatusBadge status={doc.status} />
             </div>
 
