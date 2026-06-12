@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, FileText, Calendar, DollarSign,
-  Tag, Building2, Percent, ExternalLink, ShieldCheck, Edit2, Save, X, PenLine, Plus, Trash2, ListTree
+  Tag, Building2, Percent, ShieldCheck, Edit2, Save, X, PenLine, Plus, Trash2, ListTree
 } from "lucide-react";
 import { StatusBadge, TypeBadge } from "@/components/documents/DocumentBadge";
 import { RadialProgress } from "@/components/documents/RadialProgress";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getApiBaseUrl, getDocument, updateDocument } from "@/lib/api";
-import { Separator } from "@/components/ui/separator";
 import type { Document, ExpenseMetadata, ExpenseItem } from "@/types";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -55,18 +54,18 @@ export default function DocumentDetailPage() {
   const updateEditLineItem = (index: number, field: keyof ExpenseItem, value: string | number) => {
     if (!editData) return;
     const newItems = [...(editData.line_items || [])];
-    let val = value;
+    let val: string | number | undefined = value;
     
     if (field === 'quantity' || field === 'unit_price' || field === 'total_price') {
       if (value === "") {
-        val = undefined as any;
+        val = undefined;
       } else {
         val = parseFloat(value as string);
-        if (isNaN(val as number)) val = undefined as any;
+        if (isNaN(val as number)) val = undefined;
       }
     }
     
-    newItems[index] = { ...newItems[index], [field]: val };
+    newItems[index] = { ...newItems[index], [field]: val } as ExpenseItem;
     
     // Auto-calc total price if quantity and unit_price are valid numbers
     if ((field === 'quantity' || field === 'unit_price') && 
@@ -159,29 +158,29 @@ export default function DocumentDetailPage() {
     : originalFileUrl;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in pb-12">
+    <div className="w-full max-w-5xl mx-auto space-y-6 animate-fade-in pb-12 overflow-x-hidden">
       {/* Back + title */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-4 flex-wrap min-w-0">
+        <div className="flex items-center gap-3 min-w-0 max-w-full">
           <button
             onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-0 pr-4">
+          <div className="min-w-0 pr-2 sm:pr-4">
             <h2 className="text-xl font-bold text-foreground truncate leading-tight">
               {doc.metadata?.vendor_name ?? doc.filename}
             </h2>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 min-w-0">
               <span className="truncate max-w-[200px]">{doc.filename}</span>
-              <span>•</span>
-              <span className="font-mono">{doc.id}</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline-block font-mono truncate max-w-[220px]">{doc.id}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 min-w-0">
           {doc.status !== "approved" && (
             <button 
               onClick={handleApprove}
@@ -201,15 +200,15 @@ export default function DocumentDetailPage() {
       </div>
 
       {/* Main Stats Card */}
-      <div className="rounded-3xl border border-border bg-card p-6 shadow-sm overflow-hidden relative">
+      <div className="rounded-3xl border border-border bg-card p-4 sm:p-6 shadow-sm overflow-hidden relative">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <ShieldCheck className="w-32 h-32 text-primary" />
         </div>
         
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 min-w-0">
+          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
             {m && <RadialProgress value={m.confidence_score} size={90} strokeWidth={10} />}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={doc.status} />
                 <TypeBadge type={doc.document_type} />
@@ -221,9 +220,9 @@ export default function DocumentDetailPage() {
             </div>
           </div>
           
-          <div className="flex flex-col md:items-end">
+          <div className="flex flex-col md:items-end min-w-0">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">Total Amount</p>
-            <h3 className="text-4xl font-bold text-foreground tracking-tight">
+            <h3 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight break-words">
               {m?.total_amount != null 
                 ? formatCurrency(m.total_amount, m.currency) 
                 : <span className="text-muted-foreground opacity-50">—</span>
@@ -238,12 +237,12 @@ export default function DocumentDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 min-w-0">
         {/* Left Column — 3 cols */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-2xl border border-border bg-card p-6 min-h-[300px]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
+        <div className="lg:col-span-3 space-y-6 min-w-0">
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 min-h-[300px] overflow-hidden">
+            <div className="flex items-center justify-between gap-3 mb-6 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-wrap">
                 <p className="text-sm font-semibold text-foreground">Extracted Metadata</p>
                 {!isEditing && (doc.status !== "approved" || doc.filename?.startsWith("manual_entry")) && (
                   <button 
@@ -265,7 +264,7 @@ export default function DocumentDetailPage() {
                   </button>
                 )}
               </div>
-              <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-full">
+              <span className="shrink-0 text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-full">
                 AI Confidence High
               </span>
             </div>
@@ -285,7 +284,7 @@ export default function DocumentDetailPage() {
                   { icon: Percent,   label: "Tax Rate (Est)",  value: m.tax_amount && m.total_amount ? `${Math.round((m.tax_amount / m.total_amount) * 100)}%` : null, readonly: true },
                   { icon: Calendar,  label: "Upload Date",    value: formatDate(doc.uploaded_at), readonly: true },
                 ].map(({ icon: Icon, label, value, key, type, readonly }) => (
-                  <div key={label} className="space-y-1.5">
+                  <div key={label} className="space-y-1.5 min-w-0">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <Icon className="h-3.5 w-3.5" />
                       {label}
@@ -293,12 +292,12 @@ export default function DocumentDetailPage() {
                     {isEditing && !readonly && key ? (
                       <Input
                         type={type || "text"}
-                        value={(editData as any)?.[key] || ""}
+                        value={String(editData?.[key as keyof ExpenseMetadata] ?? "")}
                         onChange={(e) => setEditData({ ...editData, [key]: e.target.value } as ExpenseMetadata)}
                         className="h-8 text-sm bg-muted/20"
                       />
                     ) : (
-                      <p className="text-sm font-semibold text-foreground pl-5.5">{value ?? "—"}</p>
+                      <p className="text-sm font-semibold text-foreground pl-5.5 break-words">{value ?? "—"}</p>
                     )}
                   </div>
                 ))}
@@ -334,10 +333,10 @@ export default function DocumentDetailPage() {
                   </button>
                 )}
               </div>
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border min-w-0">
                 {(isEditing ? editData?.line_items : m.line_items)?.map((item, i) => (
                   <div key={i} className={cn(
-                    "relative group px-6 py-4 text-sm transition-colors",
+                    "relative group px-4 sm:px-6 py-4 text-sm transition-colors min-w-0",
                     isEditing ? "bg-muted/5 hover:bg-muted/10" : "hover:bg-muted/10"
                   )}>
                     {isEditing ? (
@@ -386,17 +385,17 @@ export default function DocumentDetailPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-[1fr_auto_auto] gap-6">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-foreground font-medium">{item.description}</span>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto] sm:gap-6 min-w-0">
+                        <div className="col-span-2 sm:col-span-1 flex flex-col gap-0.5 min-w-0">
+                          <span className="text-foreground font-medium break-words">{item.description}</span>
                           <span className="text-[10px] text-muted-foreground uppercase">Description</span>
                         </div>
-                        <div className="flex flex-col items-end gap-0.5 min-w-[60px]">
+                        <div className="flex flex-col items-start sm:items-end gap-0.5 min-w-0 sm:min-w-[60px]">
                           <span className="text-foreground">{item.quantity}</span>
                           <span className="text-[10px] text-muted-foreground uppercase">Qty</span>
                         </div>
-                        <div className="flex flex-col items-end gap-0.5 min-w-[100px]">
-                          <span className="text-foreground font-bold">{formatCurrency(item.total_price, m.currency)}</span>
+                        <div className="flex flex-col items-end gap-0.5 min-w-0 sm:min-w-[100px]">
+                          <span className="text-foreground font-bold break-words text-right">{formatCurrency(item.total_price, m.currency)}</span>
                           <span className="text-[10px] text-muted-foreground uppercase">Total</span>
                         </div>
                       </div>
@@ -406,13 +405,13 @@ export default function DocumentDetailPage() {
                 
                 {isEditing && (editData?.line_items?.length === 0) && (
                    <div className="px-6 py-12 text-center">
-                    <p className="text-xs text-muted-foreground italic">No line items currently attached. Click "Add Item" to begin.</p>
+                    <p className="text-xs text-muted-foreground italic">No line items currently attached. Click &quot;Add Item&quot; to begin.</p>
                    </div>
                 )}
               </div>
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-primary/5">
+              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-border bg-primary/5 min-w-0">
                 <span className="text-sm font-bold text-foreground">Final Extracted Total</span>
-                <span className="text-lg font-black text-primary tracking-tight">
+                <span className="text-lg font-black text-primary tracking-tight text-right break-words min-w-0">
                   {formatCurrency(m.total_amount ?? 0, m.currency)}
                 </span>
               </div>
@@ -421,7 +420,7 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Right Column — 2 cols */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* File preview - Flip Card effect */}
           <div className="space-y-4">
             <p className="text-sm font-semibold text-foreground">Original Document</p>
@@ -459,13 +458,13 @@ export default function DocumentDetailPage() {
 
                 {/* Back */}
                 <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-2xl border border-border bg-white overflow-hidden shadow-lg flex flex-col">
-                  <div className="flex items-center justify-between p-2 border-b border-border bg-zinc-100">
-                    <span className="text-xs font-semibold text-zinc-800 px-2 flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2 p-2 border-b border-border bg-zinc-100 min-w-0">
+                    <span className="text-xs font-semibold text-zinc-800 px-2 flex items-center gap-2 min-w-0 truncate">
                        <FileText className="h-3 w-3" /> {doc.filename}
                     </span>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setIsFlipped(false); }}
-                      className="text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-800 px-2 py-1 bg-zinc-200/50 rounded hover:bg-zinc-200 transition-colors"
+                      className="shrink-0 text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-800 px-2 py-1 bg-zinc-200/50 rounded hover:bg-zinc-200 transition-colors"
                     >
                       Close Flip
                     </button>
@@ -495,7 +494,7 @@ export default function DocumentDetailPage() {
 
           {/* Raw JSON */}
           {m && (
-            <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 min-w-0 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold text-foreground">Raw Data Output</p>
                 <button 
