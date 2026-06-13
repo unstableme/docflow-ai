@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, RotateCcw } from "lucide-react";
 
 export type FilterState = {
   search: string;
@@ -10,6 +9,14 @@ export type FilterState = {
   document_type: string;
   source_type: string;
   sort: "date_desc" | "date_asc" | "amount_desc" | "amount_asc";
+};
+
+const DEFAULT_FILTERS: FilterState = {
+  search: "",
+  status: "all",
+  document_type: "all",
+  source_type: "all",
+  sort: "date_desc",
 };
 
 interface DocumentFiltersProps {
@@ -55,6 +62,14 @@ const selectCls =
 export function DocumentFilters({ filters, onChange }: DocumentFiltersProps) {
   const set = <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
     onChange({ ...filters, [key]: value });
+
+  // Show reset button only when something differs from the default
+  const isDirty =
+    filters.search !== DEFAULT_FILTERS.search ||
+    filters.status !== DEFAULT_FILTERS.status ||
+    filters.document_type !== DEFAULT_FILTERS.document_type ||
+    filters.source_type !== DEFAULT_FILTERS.source_type ||
+    filters.sort !== DEFAULT_FILTERS.sort;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -118,6 +133,18 @@ export function DocumentFilters({ filters, onChange }: DocumentFiltersProps) {
           ))}
         </select>
       </div>
+
+      {/* Reset All — only visible when at least one filter is active */}
+      {isDirty && (
+        <button
+          onClick={() => onChange(DEFAULT_FILTERS)}
+          className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-dashed border-muted-foreground/40 text-sm text-muted-foreground hover:border-destructive/60 hover:text-destructive hover:bg-destructive/5 transition-all duration-200 cursor-pointer"
+          title="Reset all filters"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Reset
+        </button>
+      )}
     </div>
   );
 }

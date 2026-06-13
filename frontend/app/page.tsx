@@ -92,6 +92,7 @@ export default function DashboardPage() {
           subtitle="All uploaded files"
           icon={FileText}
           accent="indigo"
+          href="/documents"
         />
         <StatsCard
           className="animate-fade-in stagger-2"

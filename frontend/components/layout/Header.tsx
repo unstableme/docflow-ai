@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Search, Bell, Sun, Moon, Menu, Home, Zap } from "lucide-react";
+import { Search, Sun, Moon, Menu, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -80,20 +80,14 @@ export function Header({ onMenuClick }: HeaderProps) {
               <Moon className="h-4 w-4" />
             )}
           </button>
-
-          {/* Notification bell */}
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted/60 transition-colors text-muted-foreground cursor-pointer">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-          </button>
         </div>
 
         {/* User Profile */}
-        <button className="flex items-center gap-3 p-1 rounded-xl hover:bg-muted/40 transition-colors group cursor-pointer">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 border border-primary/30 text-xs font-bold text-primary select-none group-hover:scale-105 transition-transform">
+        <button className="flex items-center gap-2 p-1 pr-2 rounded-xl hover:bg-muted/40 transition-colors group cursor-pointer">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 border border-primary/30 text-xs font-bold text-primary select-none group-hover:scale-105 transition-transform shrink-0">
             FT
           </div>
-          <div className="hidden sm:flex flex-col items-start leading-none pr-2 text-left">
+          <div className="hidden sm:flex flex-col items-start leading-none pr-1 text-left">
             <span className="text-[13px] font-semibold text-foreground">Finance Team</span>
             <span className="text-[10px] text-muted-foreground mt-0.5">Admin Account</span>
           </div>

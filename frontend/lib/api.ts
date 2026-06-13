@@ -187,12 +187,13 @@ export async function listDocuments(params?: {
   if (params?.source_type && params.source_type !== "all") {
     qs.append("source_type", params.source_type);
   }
-  // Frontend search and sort can still be done client-side if the backend doesn't support all yet
-  // but for now let's just fetch the base list.
-  
+  if (params?.document_type && params.document_type !== "all") {
+    qs.append("document_type", params.document_type);
+  }
+
   const documents = await apiFetch<Document[]>(`/documents/?${qs.toString()}`);
-  
-  // Apply search/sort client-side for better UX if needed
+
+  // ── Client-side search ────────────────────────────────────────────────────
   let filtered = [...documents];
   if (params?.search) {
     const q = params.search.toLowerCase();
@@ -201,8 +202,37 @@ export async function listDocuments(params?: {
       d.filename.toLowerCase().includes(q)
     );
   }
-  // ... (sort logic can be added here if desired)
-  
+
+  // ── Client-side sort ──────────────────────────────────────────────────────
+  const sort = params?.sort ?? "date_desc";
+  filtered.sort((a, b) => {
+    switch (sort) {
+      case "date_asc":
+        return new Date(a.uploaded_at).getTime() - new Date(b.uploaded_at).getTime();
+      case "date_desc":
+        return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+      case "amount_asc": {
+        // Docs with no amount sink to the bottom
+        const aAmt = a.metadata?.total_amount ?? null;
+        const bAmt = b.metadata?.total_amount ?? null;
+        if (aAmt === null && bAmt === null) return 0;
+        if (aAmt === null) return 1;
+        if (bAmt === null) return -1;
+        return aAmt - bAmt;
+      }
+      case "amount_desc": {
+        const aAmt = a.metadata?.total_amount ?? null;
+        const bAmt = b.metadata?.total_amount ?? null;
+        if (aAmt === null && bAmt === null) return 0;
+        if (aAmt === null) return 1;
+        if (bAmt === null) return -1;
+        return bAmt - aAmt;
+      }
+      default:
+        return 0;
+    }
+  });
+
   return filtered;
 }
 

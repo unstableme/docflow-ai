@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -9,6 +10,8 @@ interface StatsCardProps {
   trend?: { value: string; positive: boolean };
   accent?: "indigo" | "green" | "amber" | "red";
   className?: string;
+  /** If provided the whole card becomes a clickable link */
+  href?: string;
 }
 
 const accentMap = {
@@ -46,19 +49,12 @@ export function StatsCard({
   trend,
   accent = "indigo",
   className,
+  href,
 }: StatsCardProps) {
   const colors = accentMap[accent];
 
-  return (
-    <div
-      className={cn(
-        "group relative rounded-2xl border bg-card p-5 transition-all duration-300",
-        "hover:shadow-xl hover:-translate-y-0.5",
-        colors.border,
-        colors.glow,
-        className
-      )}
-    >
+  const inner = (
+    <>
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
@@ -80,6 +76,25 @@ export function StatsCard({
           <Icon className="h-5 w-5" />
         </div>
       </div>
-    </div>
+    </>
   );
+
+  const baseClass = cn(
+    "group relative rounded-2xl border bg-card p-5 transition-all duration-300",
+    "hover:shadow-xl hover:-translate-y-0.5",
+    colors.border,
+    colors.glow,
+    href && "cursor-pointer hover:ring-2 hover:ring-primary/30",
+    className
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={baseClass}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={baseClass}>{inner}</div>;
 }
