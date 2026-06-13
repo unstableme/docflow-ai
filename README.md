@@ -2,7 +2,7 @@
 
 DocFlow AI is a full-stack expense document intelligence app. It helps users upload receipts or invoices, extract structured financial data with AI, review the results, approve trusted records, and ask questions about approved documents through a RAG-powered assistant.
 
-The project includes a FastAPI backend, a Next.js frontend, PostgreSQL storage, OCR/parsing services, AI extraction, and Pinecone-based semantic retrieval.
+The project includes a FastAPI backend, a Next.js frontend, PostgreSQL storage, OCR/parsing services, AI extraction, and Pinecone-based semantic retrieval.(Frontend is fully vibecoded, backend part is mostly done by me, but polished with AI for commenting, docstring stuff, and somewhere logic)
 
 ## Main Workflows
 
